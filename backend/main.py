@@ -20,9 +20,25 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 # HTML parsing
 from bs4 import BeautifulSoup
 
-# ================================
-# Logging
-# ================================
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI(title="QA-Agent Backend")
+
+# Add CORS so your UI (Streamlit) can talk to this backend
+origins = [
+    "http://localhost:8501",
+    "http://127.0.0.1:8501",
+    # when deployed, you'll add the Streamlit URL (or use "*" while testing)
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # during development you can use ["*"]; for production replace with specific origin
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("qa-agent")
 
