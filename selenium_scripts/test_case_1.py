@@ -9,22 +9,17 @@ import pathlib
 import time
 import os
 
-# -----------------------------
-# 1) Launch Chrome
-# -----------------------------
+
 driver = webdriver.Chrome()
 
-# -----------------------------
-# 2) Load checkout.html
-# -----------------------------
+
 checkout_path = pathlib.Path("uploaded_docs/checkout.html").absolute()
 driver.get(f"file:///{checkout_path.as_posix()}")
 
 wait = WebDriverWait(driver, 10)
 
-# -----------------------------
-# 3) Helper to find discount input with fallback selectors
-# -----------------------------
+
+
 def find_with_fallback():
     selectors = [
         (By.ID, "discount-code"),
@@ -45,9 +40,6 @@ def find_with_fallback():
 
     return None
 
-# -----------------------------
-# 4) Execute test case
-# -----------------------------
 try:
     time.sleep(0.5)
 
