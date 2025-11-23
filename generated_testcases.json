@@ -1,99 +1,38 @@
-[
-  {
-    "Test_ID": "TC-CHK-001",
-    "Feature": "Discount Code",
-    "Test_Scenario": "Given a valid discount code, when the user applies it on checkout, then the order total updates accordingly.",
-    "Steps": [
-      "Open checkout page",
-      "Enter a valid code in the discount input",
-      "Click Apply",
-      "Verify total price is reduced by expected amount"
-    ],
-    "Expected_Result": "Order total decreases according to discount; success message shown.",
-    "Grounded_In": [
-      "checkout.html",
-      "notes.md"
-    ],
-    "Priority": "High"
+{
+  "1a30a53f-e25f-408b-ad89-7e1ec092fc77": {
+    "id": "1a30a53f-e25f-408b-ad89-7e1ec092fc77",
+    "payload": {
+      "Test_ID": "TC-001",
+      "Feature": "test flow",
+      "Test_Scenario": "Validate: test flow",
+      "Expected_Result": "The feature should work as expected.",
+      "Grounded_In": [
+        "faq.json"
+      ]
+    }
   },
-  {
-    "Test_ID": "TC-CHK-002",
-    "Feature": "Discount Code (negative)",
-    "Test_Scenario": "Given an invalid or expired discount code, when the user applies it, then an appropriate error message is displayed and the total is unchanged.",
-    "Steps": [
-      "Open checkout page",
-      "Enter an invalid code",
-      "Click Apply",
-      "Verify error message appears and total remains same"
-    ],
-    "Expected_Result": "Error message displayed (e.g., 'Invalid code') and total unchanged.",
-    "Grounded_In": [
-      "checkout.html",
-      "notes.md"
-    ],
-    "Priority": "Medium"
+  "604923c1-0f4a-4578-9f67-25b4229475e8": {
+    "id": "604923c1-0f4a-4578-9f67-25b4229475e8",
+    "payload": {
+      "Test_ID": "TC-002",
+      "Feature": "test flow",
+      "Test_Scenario": "Validate: test flow",
+      "Expected_Result": "The feature should work as expected.",
+      "Grounded_In": [
+        "faq.json"
+      ]
+    }
   },
-  {
-    "Test_ID": "TC-CHK-003",
-    "Feature": "Form Validation",
-    "Test_Scenario": "Given missing required checkout fields, when the user attempts to place order, then inline validation errors must be shown and submission blocked.",
-    "Steps": [
-      "Open checkout page",
-      "Leave required fields blank (e.g., address/payment)",
-      "Click Place Order",
-      "Verify inline error messages and that the order is not submitted"
-    ],
-    "Expected_Result": "Inline red validation messages shown; order is not submitted.",
-    "Grounded_In": [
-      "checkout.html",
-      "ui_ux_guide.txt"
-    ],
-    "Priority": "High"
-  },
-  {
-    "Test_ID": "TC-CHK-004",
-    "Feature": "Place Order",
-    "Test_Scenario": "Given all required fields filled with valid data, when the user places the order, then confirmation is shown and total is recorded.",
-    "Steps": [
-      "Fill required fields with valid info",
-      "Click Place Order",
-      "Verify confirmation screen and order total matches expected"
-    ],
-    "Expected_Result": "Order confirmation appears and order total saved correctly.",
-    "Grounded_In": [
-      "checkout.html"
-    ],
-    "Priority": "High"
-  },
-  {
-    "Test_ID": "TC-UI-001",
-    "Feature": "UI/UX - Error Display",
-    "Test_Scenario": "Given validation errors occur, then error text must appear in red and inline as described in the UI guide.",
-    "Steps": [
-      "Trigger a validation error (e.g., blank required field)",
-      "Observe error message styling",
-      "Compare to UI guide for inline red text"
-    ],
-    "Expected_Result": "Errors appear inline in red as stated in UI/UX guidelines.",
-    "Grounded_In": [
-      "ui_ux_guide.txt"
-    ],
-    "Priority": "Low"
-  },
-  {
-    "Test_ID": "TC-SEC-001",
-    "Feature": "Security - Input Sanitization",
-    "Test_Scenario": "Given malicious input in text fields, when user submits, then inputs should be sanitized and not break the page or execute scripts.",
-    "Steps": [
-      "Enter a script-like payload into text inputs",
-      "Attempt to submit",
-      "Verify page does not execute script and input is sanitized"
-    ],
-    "Expected_Result": "No script execution; input encoded/escaped by application.",
-    "Grounded_In": [
-      "notes.md",
-      "api_endpoints.json"
-    ],
-    "Priority": "Medium"
+  "24dcb21c-966f-4cbe-8d2c-88948e95d9d3": {
+    "id": "24dcb21c-966f-4cbe-8d2c-88948e95d9d3",
+    "payload": {
+      "Test_ID": "TC-003",
+      "Feature": "test flow",
+      "Test_Scenario": "Validate: test flow",
+      "Expected_Result": "The feature should work as expected.",
+      "Grounded_In": [
+        "faq.json"
+      ]
+    }
   }
-]
+}
