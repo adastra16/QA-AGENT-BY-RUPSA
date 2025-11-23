@@ -3,17 +3,15 @@ import requests
 import json
 import os
 
-# example — replace this with your real ngrok URL (no angle brackets)
-BACKEND_URL = "https://unasked-busiest-yahir.ngrok-free.dev"
+BACKEND_URL = "http://127.0.0.1:8000"
 
 
 
 
 
-# Local path to a saved generated script (for quick demo / optional)
+
 LOCAL_SCRIPT_PATH = r"C:\Users\RUPSA NANDA\OneDrive\Desktop\QA-AGENT\uploaded_docs\selenium_.py"
 
-# ---------------- UI CONFIG ----------------
 st.set_page_config(
     page_title="QA-Agent Dashboard",
     layout="wide"
@@ -24,11 +22,9 @@ st.markdown("This UI lets you upload documents, build a knowledge base, generate
 
 st.sidebar.header("📁 Upload Documents")
 
-# Keep uploaded paths in session
 if "uploaded_paths" not in st.session_state:
     st.session_state["uploaded_paths"] = []
 
-# ---------------- FILE UPLOAD ----------------
 uploaded_files = st.sidebar.file_uploader(
     "Upload support docs (HTML, MD, TXT, JSON, PDF)",
     accept_multiple_files=True
@@ -49,7 +45,6 @@ if uploaded_files:
     else:
         st.sidebar.error("Upload failed")
 
-# Show uploaded files
 st.sidebar.subheader("Uploaded Files")
 for p in st.session_state["uploaded_paths"]:
     st.sidebar.write(f"- {p}")
@@ -57,7 +52,6 @@ for p in st.session_state["uploaded_paths"]:
 if st.sidebar.button("Clear uploaded"):
     st.session_state["uploaded_paths"] = []
 
-# ---------------- BUILD KB ----------------
 st.header("1️⃣ Build Knowledge Base")
 
 if st.button("Build KB"):
@@ -77,7 +71,7 @@ if st.button("Build KB"):
             else:
                 st.error(resp.text)
 
-# ---------------- GENERATE TEST CASES ----------------
+
 st.header("2️⃣ Generate Test Cases")
 
 query = st.text_area("Enter your feature / requirement text:", height=80)
@@ -99,14 +93,14 @@ if st.button("Generate Testcases"):
             else:
                 st.error(resp.text)
 
-# Display testcases
+
 if st.session_state.get("generated"):
     st.subheader("Generated Test Cases")
     for item in st.session_state["generated"]:
         st.code(json.dumps(item["payload"], indent=2))
 
 
-# ---------------- GENERATE SELENIUM SCRIPT ----------------
+
 st.header("3️⃣ Generate Selenium Script")
 
 if st.button("Refresh Testcases from Backend"):
@@ -133,14 +127,14 @@ if cases:
             )
             if resp.ok:
                 data = resp.json()
-                # Accept either key: "selenium_script" (preferred) OR "script" (backend returns this)
+     
                 script_text = data.get("selenium_script") or data.get("script") or ""
 
                 if script_text:
                     st.subheader("Generated Script")
                     st.code(script_text, language="python")
 
-                    # Download button: allow saving directly from UI
+                
                     st.download_button(
                         label="Download script (.py)",
                         data=script_text,
@@ -148,7 +142,7 @@ if cases:
                         mime="text/x-python"
                     )
 
-                    # Optional: show local path and link (if file already exists on disk)
+     
                     if os.path.exists(LOCAL_SCRIPT_PATH):
                         st.markdown(f"Local script file detected: `{LOCAL_SCRIPT_PATH}`")
                         st.markdown(f"[Open local script](file:///{LOCAL_SCRIPT_PATH.replace(os.sep, '/')})")
