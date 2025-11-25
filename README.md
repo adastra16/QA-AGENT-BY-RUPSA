@@ -1,21 +1,37 @@
-QA-Agent – Automated Testcase & Script Generator
+QA-Agent – Automated Testcase & Selenium Script Generator
 
-This project was created by Rupsa Nanda, and this is the assignment assigned to me.
-It automates testcase generation from uploaded documents and also generates Selenium scripts based on selected testcases.
+Created by: Rupsa Nanda
+Assignment Project
 
-The backend is built using FastAPI, the UI is in Streamlit, and ChromaDB stores the knowledge base.
+QA-Agent is an intelligent automated QA workflow tool. It generates testcases from uploaded documents and converts selected testcases into Selenium scripts. The system builds its own knowledge base using ChromaDB and uses an LLM-based embedding model for understanding document content.
+
+This project consists of:
+
+FastAPI backend
+
+Streamlit UI
+
+ChromaDB vector storage
+
+SentenceTransformer embeddings
+
+Automated Selenium script generator
 
 Features
 
 Upload multiple project/support documents
 
-Build a knowledge base
+Build a searchable knowledge base using ChromaDB
 
-Generate structured test cases
+Generate structured test cases automatically
 
-View and select previously generated test cases
+View previously generated test cases
 
-Auto-generate Selenium scripts from a testcase
+Select a testcase and generate Selenium automation scripts
+
+Simple UI built with Streamlit
+
+Fast backend powered by FastAPI
 
 Tech Stack
 
@@ -31,41 +47,71 @@ SentenceTransformer
 
 Selenium WebDriver
 
-How to Run
-1. Start Backend
-uvicorn backend.main:app --reload --port 8000
+Uvicorn
 
-2. Start Streamlit UI
-streamlit run ui/app.py
+Project Structure
+QA-AGENT/
+│
+├── backend/
+│   ├── main.py
+│   ├── requirements.txt
+│   └── ...other backend modules
+│
+├── ui/
+│   ├── app.py
+│   └── ...UI components
+│
+├── uploaded_assets/          # Stores uploaded documents
+├── generated_testcases.json  # Saved testcases
+└── README.md
+
+How to Run the Project Locally
+1. Start the Backend
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
 
 
-Backend: http://127.0.0.1:8000
-UI: http://localhost:8501
+Backend will run at:
+http://127.0.0.1:8000
 
-Steps to Use
+API docs: http://127.0.0.1:8000/docs
+
+2. Start the Streamlit UI
+cd ui
+streamlit run app.py
+
+
+UI will run at:
+http://localhost:8501
+
+Steps to Use QA-Agent
 
 Open the Streamlit UI
 
-Upload your documents
+Upload one or more documents
 
-Click Build KB
+Click Build KB to create the knowledge base
 
 Enter requirement text
 
-Generate testcases
+Click Generate Testcases
 
-Refresh testcases
+Click Refresh Testcases
 
-Select one
+Select a testcase
 
-Generate Selenium script
+Click Generate Selenium Script
 
-Project Structure
-backend/
-ui/
-uploaded_assets/
-generated_testcases.json
+Notes
+
+ChromaDB stores embeddings locally inside the project folder.
+
+Generated testcases persist in generated_testcases.json.
+
+Selenium scripts are generated directly from the testcase structure.
 
 Final Note
 
-Thank you for checking this project.
+Thank you for reviewing this assignment project.
+QA-Agent demonstrates how automation and embeddings can streamline QA workflows and reduce manual effort.
