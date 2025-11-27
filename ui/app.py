@@ -3,7 +3,8 @@ import requests
 import json
 import os
 
-BACKEND_URL = "http://127.0.0.1:8000"
+# Use environment variable for backend URL (useful for deployment)
+BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
 
 
 
