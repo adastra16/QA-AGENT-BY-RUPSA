@@ -45,7 +45,15 @@ except Exception:
     collection = client.create_collection(collection_name)
     logger.info(f"Created collection '{collection_name}'")
 
-embed_model = SentenceTransformer(EMBED_MODEL_NAME)
+# Lazy load embedding model to save memory
+_embed_model = None
+
+def get_embed_model():
+    global _embed_model
+    if _embed_model is None:
+        logger.info("Loading embedding model...")
+        _embed_model = SentenceTransformer(EMBED_MODEL_NAME)
+    return _embed_model
 
 
 
@@ -102,6 +110,14 @@ def extract_text_from_file(filename: str, bytes_data: bytes) -> str:
 
 
 
+@app.get("/")
+async def root():
+    return {"status": "ok", "message": "QA-Agent Backend is running"}
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "service": "qa-agent-backend"}
+
 @app.post("/upload_files/")
 async def upload_files(files: List[UploadFile] = File(...)):
     saved = []
@@ -156,6 +172,7 @@ async def build_kb(
     if not docs:
         return {"status": "no_docs_found", "received": file_paths}
 
+    embed_model = get_embed_model()
     embeddings = embed_model.encode(docs, convert_to_numpy=True)
 
     try:
