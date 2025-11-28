@@ -15,8 +15,12 @@ try:
     import uvicorn
     
     if __name__ == "__main__":
-        port = int(os.environ.get("PORT", 8000))
-        print(f"Starting server on port {port}")
+        # Render and other platforms provide the port via PORT environment variable.
+        # Use it when present, otherwise default to 8000 for local development.
+        port = int(os.environ.get("PORT", os.environ.get("port", 8000)))
+        env_port = os.environ.get("PORT") or os.environ.get("port")
+        print(f"Detected PORT env var: {env_port}")
+        print(f"Starting server on 0.0.0.0:{port}")
         uvicorn.run(
             app,
             host="0.0.0.0",
