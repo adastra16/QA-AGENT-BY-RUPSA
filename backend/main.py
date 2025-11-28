@@ -116,13 +116,28 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "healthy", "service": "qa-agent-backend"}
+    try:
+        # Check if ChromaDB is accessible
+        collection_count = collection.count()
+        return {
+            "status": "healthy", 
+            "service": "qa-agent-backend",
+            "chromadb_documents": collection_count,
+            "embedding_model_loaded": _embed_model is not None
+        }
+    except Exception as e:
+        return {
+            "status": "degraded",
+            "service": "qa-agent-backend",
+            "error": str(e)
+        }
 
 @app.post("/upload_files/")
 async def upload_files(files: List[UploadFile] = File(...)):
     try:
         saved = []
         upload_dir = "uploaded_assets"
+        MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB limit
         
         # Create upload directory if it doesn't exist
         os.makedirs(upload_dir, exist_ok=True)
@@ -141,12 +156,17 @@ async def upload_files(files: List[UploadFile] = File(...)):
                 # Read file content
                 content = await f.read()
                 
+                # Check file size
+                if len(content) > MAX_FILE_SIZE:
+                    logger.warning(f"File {f.filename} too large: {len(content)} bytes")
+                    return {"status": "error", "message": f"File {f.filename} is too large (max 10MB)"}
+                
                 # Write file
                 with open(path, "wb") as fh:
                     fh.write(content)
                 
-                saved.append({"filename": safe_filename, "path": path})
-                logger.info(f"Saved file: {path}")
+                saved.append({"filename": safe_filename, "path": path, "size": len(content)})
+                logger.info(f"Saved file: {path} ({len(content)} bytes)")
                 
             except Exception as e:
                 logger.error(f"Error saving file {f.filename}: {str(e)}")
@@ -216,25 +236,48 @@ async def build_kb(
         if not docs:
             return {"status": "no_docs_found", "received": file_paths, "message": "No documents could be processed"}
 
-        logger.info(f"Generating embeddings for {len(docs)} chunks...")
-        embed_model = get_embed_model()
-        embeddings = embed_model.encode(docs, convert_to_numpy=True)
-
+        # Process in batches to avoid memory issues
+        BATCH_SIZE = 50  # Process 50 chunks at a time
+        logger.info(f"Generating embeddings for {len(docs)} chunks in batches of {BATCH_SIZE}...")
+        
         try:
-            collection.add(
-                documents=docs,
-                metadatas=metadatas,
-                ids=ids,
-                embeddings=embeddings.tolist()
-            )
+            embed_model = get_embed_model()
         except Exception as e:
-            logger.warning(f"Error with tolist(), trying without: {str(e)}")
-            collection.add(
-                documents=docs,
-                metadatas=metadatas,
-                ids=ids,
-                embeddings=embeddings
-            )
+            logger.error(f"Failed to load embedding model: {str(e)}")
+            return {"status": "error", "message": f"Failed to load embedding model: {str(e)}"}
+
+        # Process in batches
+        for i in range(0, len(docs), BATCH_SIZE):
+            batch_docs = docs[i:i+BATCH_SIZE]
+            batch_metadatas = metadatas[i:i+BATCH_SIZE]
+            batch_ids = ids[i:i+BATCH_SIZE]
+            
+            try:
+                logger.info(f"Processing batch {i//BATCH_SIZE + 1}/{(len(docs)-1)//BATCH_SIZE + 1} ({len(batch_docs)} chunks)...")
+                batch_embeddings = embed_model.encode(batch_docs, convert_to_numpy=True, show_progress_bar=False)
+                
+                try:
+                    collection.add(
+                        documents=batch_docs,
+                        metadatas=batch_metadatas,
+                        ids=batch_ids,
+                        embeddings=batch_embeddings.tolist()
+                    )
+                except Exception as e:
+                    logger.warning(f"Error with tolist(), trying without: {str(e)}")
+                    collection.add(
+                        documents=batch_docs,
+                        metadatas=batch_metadatas,
+                        ids=batch_ids,
+                        embeddings=batch_embeddings
+                    )
+                    
+            except MemoryError:
+                logger.error("Out of memory while processing embeddings")
+                return {"status": "error", "message": "Out of memory. Try uploading smaller files or reduce chunk_size."}
+            except Exception as e:
+                logger.error(f"Error processing batch: {str(e)}")
+                return {"status": "error", "message": f"Error processing batch: {str(e)}"}
 
         return {
             "status": "kb_built",

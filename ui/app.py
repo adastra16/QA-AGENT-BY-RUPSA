@@ -25,11 +25,20 @@ st.markdown("This UI lets you upload documents, build a knowledge base, generate
 try:
     health_resp = requests.get(f"{BACKEND_URL}/health", timeout=5)
     if health_resp.ok:
-        st.sidebar.success("✅ Backend connected")
+        health_data = health_resp.json()
+        if health_data.get("status") == "healthy":
+            docs_count = health_data.get("chromadb_documents", 0)
+            st.sidebar.success(f"✅ Backend connected ({docs_count} docs in KB)")
+        else:
+            st.sidebar.warning(f"⚠️ Backend degraded: {health_data.get('error', 'Unknown issue')}")
     else:
         st.sidebar.warning("⚠️ Backend may be having issues")
-except:
+except requests.exceptions.Timeout:
+    st.sidebar.error("❌ Backend timeout - service may be slow")
+except requests.exceptions.ConnectionError:
     st.sidebar.error(f"❌ Cannot reach backend at {BACKEND_URL}")
+except Exception as e:
+    st.sidebar.warning(f"⚠️ Backend check failed: {str(e)}")
 
 st.sidebar.header("📁 Upload Documents")
 
