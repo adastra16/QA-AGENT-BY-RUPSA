@@ -21,6 +21,16 @@ st.set_page_config(
 st.title("🤖 QA-Agent – Automated Testcase & Script Generator")
 st.markdown("This UI lets you upload documents, build a knowledge base, generate testcases and auto-create Selenium scripts.")
 
+# Check backend connectivity
+try:
+    health_resp = requests.get(f"{BACKEND_URL}/health", timeout=5)
+    if health_resp.ok:
+        st.sidebar.success("✅ Backend connected")
+    else:
+        st.sidebar.warning("⚠️ Backend may be having issues")
+except:
+    st.sidebar.error(f"❌ Cannot reach backend at {BACKEND_URL}")
+
 st.sidebar.header("📁 Upload Documents")
 
 if "uploaded_paths" not in st.session_state:
@@ -36,15 +46,32 @@ if uploaded_files:
     for f in uploaded_files:
         files_payload.append(("files", (f.name, f.getvalue(), f.type)))
 
-    resp = requests.post(f"{BACKEND_URL}/upload_files/", files=files_payload)
-    if resp.ok:
-        saved = resp.json().get("saved", [])
-        for s in saved:
-            if s["path"] not in st.session_state["uploaded_paths"]:
-                st.session_state["uploaded_paths"].append(s["path"])
-        st.sidebar.success("Files uploaded to backend")
-    else:
-        st.sidebar.error("Upload failed")
+    try:
+        resp = requests.post(f"{BACKEND_URL}/upload_files/", files=files_payload, timeout=30)
+        if resp.ok:
+            result = resp.json()
+            if result.get("status") == "ok":
+                saved = result.get("saved", [])
+                for s in saved:
+                    if s["path"] not in st.session_state["uploaded_paths"]:
+                        st.session_state["uploaded_paths"].append(s["path"])
+                st.sidebar.success(f"✅ {len(saved)} file(s) uploaded successfully!")
+            else:
+                st.sidebar.error(f"❌ Upload failed: {result.get('message', 'Unknown error')}")
+        else:
+            error_msg = "Upload failed"
+            try:
+                error_data = resp.json()
+                error_msg = error_data.get("message", error_msg)
+            except:
+                error_msg = resp.text[:200] if resp.text else error_msg
+            st.sidebar.error(f"❌ {error_msg}")
+    except requests.exceptions.Timeout:
+        st.sidebar.error("❌ Upload timeout - file may be too large or server is slow")
+    except requests.exceptions.ConnectionError:
+        st.sidebar.error(f"❌ Cannot connect to backend at {BACKEND_URL}. Is it running?")
+    except Exception as e:
+        st.sidebar.error(f"❌ Upload error: {str(e)}")
 
 st.sidebar.subheader("Uploaded Files")
 for p in st.session_state["uploaded_paths"]:
@@ -57,20 +84,39 @@ st.header("1️⃣ Build Knowledge Base")
 
 if st.button("Build KB"):
     if not st.session_state["uploaded_paths"]:
-        st.warning("Upload files first.")
+        st.warning("⚠️ Upload files first.")
     else:
-        with st.spinner("Building knowledge base..."):
-            payload = {
-                "file_paths": st.session_state["uploaded_paths"],
-                "chunk_size": 1000,
-                "chunk_overlap": 200
-            }
-            resp = requests.post(f"{BACKEND_URL}/build_kb/", json=payload)
+        with st.spinner("Building knowledge base... This may take a moment."):
+            try:
+                payload = {
+                    "file_paths": st.session_state["uploaded_paths"],
+                    "chunk_size": 1000,
+                    "chunk_overlap": 200
+                }
+                resp = requests.post(f"{BACKEND_URL}/build_kb/", json=payload, timeout=120)
 
-            if resp.ok:
-                st.success(resp.json())
-            else:
-                st.error(resp.text)
+                if resp.ok:
+                    result = resp.json()
+                    if result.get("status") == "kb_built":
+                        st.success(f"✅ Knowledge base built! Processed {result.get('num_chunks', 0)} chunks from {len(result.get('ingested_files', []))} file(s)")
+                    elif result.get("status") == "no_docs_found":
+                        st.warning(f"⚠️ {result.get('message', 'No documents found to process')}")
+                    else:
+                        st.info(f"ℹ️ {result}")
+                else:
+                    error_msg = "Build KB failed"
+                    try:
+                        error_data = resp.json()
+                        error_msg = error_data.get("message", error_msg)
+                    except:
+                        error_msg = resp.text[:200] if resp.text else error_msg
+                    st.error(f"❌ {error_msg}")
+            except requests.exceptions.Timeout:
+                st.error("❌ Build KB timeout - this may take longer for large files")
+            except requests.exceptions.ConnectionError:
+                st.error(f"❌ Cannot connect to backend at {BACKEND_URL}")
+            except Exception as e:
+                st.error(f"❌ Error: {str(e)}")
 
 
 st.header("2️⃣ Generate Test Cases")

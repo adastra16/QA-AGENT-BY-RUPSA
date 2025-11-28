@@ -120,17 +120,48 @@ async def health():
 
 @app.post("/upload_files/")
 async def upload_files(files: List[UploadFile] = File(...)):
-    saved = []
-    upload_dir = "uploaded_assets"
-    os.makedirs(upload_dir, exist_ok=True)
+    try:
+        saved = []
+        upload_dir = "uploaded_assets"
+        
+        # Create upload directory if it doesn't exist
+        os.makedirs(upload_dir, exist_ok=True)
+        logger.info(f"Upload directory: {os.path.abspath(upload_dir)}")
 
-    for f in files:
-        path = os.path.join(upload_dir, f.filename)
-        with open(path, "wb") as fh:
-            fh.write(await f.read())
-        saved.append({"filename": f.filename, "path": path})
+        for f in files:
+            try:
+                if not f.filename:
+                    logger.warning("Received file with no filename")
+                    continue
+                
+                # Sanitize filename to prevent path traversal
+                safe_filename = os.path.basename(f.filename)
+                path = os.path.join(upload_dir, safe_filename)
+                
+                # Read file content
+                content = await f.read()
+                
+                # Write file
+                with open(path, "wb") as fh:
+                    fh.write(content)
+                
+                saved.append({"filename": safe_filename, "path": path})
+                logger.info(f"Saved file: {path}")
+                
+            except Exception as e:
+                logger.error(f"Error saving file {f.filename}: {str(e)}")
+                return {"status": "error", "message": f"Failed to save {f.filename}: {str(e)}"}
 
-    return {"status": "ok", "saved": saved}
+        if not saved:
+            return {"status": "error", "message": "No files were saved"}
+
+        return {"status": "ok", "saved": saved}
+    
+    except Exception as e:
+        logger.error(f"Upload error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": f"Upload failed: {str(e)}"}
 
 
 
@@ -140,61 +171,82 @@ async def build_kb(
     chunk_size: int = Body(1000),
     chunk_overlap: int = Body(200)
 ):
-    docs = []
-    metadatas = []
-    ids = []
-
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size, chunk_overlap=chunk_overlap
-    )
-
-    for raw_path in file_paths:
-        path = raw_path.replace("/", os.sep)
-        if not os.path.exists(path):
-            logger.warning(f"Missing file: {path}")
-            continue
-
-        with open(path, "rb") as f:
-            content = f.read()
-
-        text = extract_text_from_file(path, content)
-        if not text:
-            continue
-
-        chunks = splitter.split_text(text)
-
-        for i, c in enumerate(chunks):
-            uid = str(uuid.uuid4())
-            docs.append(c)
-            metadatas.append({"source": os.path.basename(path), "path": path, "chunk_index": i})
-            ids.append(uid)
-
-    if not docs:
-        return {"status": "no_docs_found", "received": file_paths}
-
-    embed_model = get_embed_model()
-    embeddings = embed_model.encode(docs, convert_to_numpy=True)
-
     try:
-        collection.add(
-            documents=docs,
-            metadatas=metadatas,
-            ids=ids,
-            embeddings=embeddings.tolist()
-        )
-    except:
-        collection.add(
-            documents=docs,
-            metadatas=metadatas,
-            ids=ids,
-            embeddings=embeddings
+        docs = []
+        metadatas = []
+        ids = []
+
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size, chunk_overlap=chunk_overlap
         )
 
-    return {
-        "status": "kb_built",
-        "num_chunks": len(docs),
-        "ingested_files": list({m["source"] for m in metadatas})
-    }
+        for raw_path in file_paths:
+            try:
+                # Normalize path separators
+                path = raw_path.replace("/", os.sep).replace("\\", os.sep)
+                
+                # Check if file exists
+                if not os.path.exists(path):
+                    logger.warning(f"Missing file: {path} (absolute: {os.path.abspath(path)})")
+                    continue
+
+                logger.info(f"Processing file: {path}")
+
+                with open(path, "rb") as f:
+                    content = f.read()
+
+                text = extract_text_from_file(path, content)
+                if not text:
+                    logger.warning(f"No text extracted from: {path}")
+                    continue
+
+                chunks = splitter.split_text(text)
+                logger.info(f"Split {path} into {len(chunks)} chunks")
+
+                for i, c in enumerate(chunks):
+                    uid = str(uuid.uuid4())
+                    docs.append(c)
+                    metadatas.append({"source": os.path.basename(path), "path": path, "chunk_index": i})
+                    ids.append(uid)
+                    
+            except Exception as e:
+                logger.error(f"Error processing file {raw_path}: {str(e)}")
+                continue
+
+        if not docs:
+            return {"status": "no_docs_found", "received": file_paths, "message": "No documents could be processed"}
+
+        logger.info(f"Generating embeddings for {len(docs)} chunks...")
+        embed_model = get_embed_model()
+        embeddings = embed_model.encode(docs, convert_to_numpy=True)
+
+        try:
+            collection.add(
+                documents=docs,
+                metadatas=metadatas,
+                ids=ids,
+                embeddings=embeddings.tolist()
+            )
+        except Exception as e:
+            logger.warning(f"Error with tolist(), trying without: {str(e)}")
+            collection.add(
+                documents=docs,
+                metadatas=metadatas,
+                ids=ids,
+                embeddings=embeddings
+            )
+
+        return {
+            "status": "kb_built",
+            "num_chunks": len(docs),
+            "ingested_files": list({m["source"] for m in metadatas})
+        }
+    
+    except Exception as e:
+        logger.error(f"Build KB error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": f"Failed to build KB: {str(e)}"}
 
 
 class QueryRequest(BaseModel):
