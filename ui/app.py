@@ -49,17 +49,18 @@ except Exception as e:
 
 # Wake backend button (for sleeping services)
 if st.sidebar.button("🔄 Wake Backend / Check Status"):
-    with st.sidebar.spinner("Checking backend..."):
-        try:
-            health_resp = requests.get(f"{BACKEND_URL}/health", timeout=10)
-            if health_resp.ok:
-                health_data = health_resp.json()
-                st.sidebar.success(f"✅ Backend is awake! ({health_data.get('chromadb_documents', 0)} docs)")
-            else:
-                st.sidebar.warning("⚠️ Backend responded but may have issues")
-        except:
-            st.sidebar.error("❌ Backend is not responding. It may be sleeping or crashed.")
-            st.sidebar.info("💡 Go to Render dashboard and check backend service status")
+    status_placeholder = st.sidebar.empty()
+    status_placeholder.info("⏳ Checking backend...")
+    try:
+        health_resp = requests.get(f"{BACKEND_URL}/health", timeout=10)
+        if health_resp.ok:
+            health_data = health_resp.json()
+            status_placeholder.success(f"✅ Backend is awake! ({health_data.get('chromadb_documents', 0)} docs)")
+        else:
+            status_placeholder.warning("⚠️ Backend responded but may have issues")
+    except Exception as e:
+        status_placeholder.error("❌ Backend is not responding. It may be sleeping or crashed.")
+        st.sidebar.info("💡 Go to Render dashboard and check backend service status")
 
 st.sidebar.header("📁 Upload Documents")
 
