@@ -185,12 +185,6 @@ Please open issues or PRs if you'd like to fix bugs or add features. If you subm
 
 ---
 
-## License & Contact
-This project is open for educational and assignment use. Contact Rupsa Nanda (repo owner) if you need more information.
 
----
-
-Thank you for exploring QA-Agent!
-# QA-Agent – Automated Testcase & Selenium Script Generator
 
 
