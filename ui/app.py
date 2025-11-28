@@ -34,11 +34,32 @@ try:
     else:
         st.sidebar.warning("⚠️ Backend may be having issues")
 except requests.exceptions.Timeout:
-    st.sidebar.error("❌ Backend timeout - service may be slow")
+    st.sidebar.error("❌ Backend timeout - service may be slow or sleeping")
+    st.sidebar.info("💡 Render free tier services sleep after 15min inactivity. They wake up in ~30 seconds.")
 except requests.exceptions.ConnectionError:
     st.sidebar.error(f"❌ Cannot reach backend at {BACKEND_URL}")
+    st.sidebar.info("💡 Check if backend service is running in Render dashboard")
 except Exception as e:
-    st.sidebar.warning(f"⚠️ Backend check failed: {str(e)}")
+    error_msg = str(e)
+    if "502" in error_msg or "Bad Gateway" in error_msg:
+        st.sidebar.error("❌ Backend is down (502 error)")
+        st.sidebar.info("💡 Backend may be sleeping or crashed. Check Render dashboard.")
+    else:
+        st.sidebar.warning(f"⚠️ Backend check failed: {error_msg}")
+
+# Wake backend button (for sleeping services)
+if st.sidebar.button("🔄 Wake Backend / Check Status"):
+    with st.sidebar.spinner("Checking backend..."):
+        try:
+            health_resp = requests.get(f"{BACKEND_URL}/health", timeout=10)
+            if health_resp.ok:
+                health_data = health_resp.json()
+                st.sidebar.success(f"✅ Backend is awake! ({health_data.get('chromadb_documents', 0)} docs)")
+            else:
+                st.sidebar.warning("⚠️ Backend responded but may have issues")
+        except:
+            st.sidebar.error("❌ Backend is not responding. It may be sleeping or crashed.")
+            st.sidebar.info("💡 Go to Render dashboard and check backend service status")
 
 st.sidebar.header("📁 Upload Documents")
 
@@ -78,9 +99,15 @@ if uploaded_files:
     except requests.exceptions.Timeout:
         st.sidebar.error("❌ Upload timeout - file may be too large or server is slow")
     except requests.exceptions.ConnectionError:
-        st.sidebar.error(f"❌ Cannot connect to backend at {BACKEND_URL}. Is it running?")
+        st.sidebar.error(f"❌ Cannot connect to backend at {BACKEND_URL}")
+        st.sidebar.info("💡 Backend may be sleeping. Wait 30 seconds and try again.")
     except Exception as e:
-        st.sidebar.error(f"❌ Upload error: {str(e)}")
+        error_str = str(e)
+        if "502" in error_str or "Bad Gateway" in error_str:
+            st.sidebar.error("❌ Backend is down (502 error)")
+            st.sidebar.info("💡 Backend service may be sleeping or crashed. Check Render dashboard.")
+        else:
+            st.sidebar.error(f"❌ Upload error: {error_str}")
 
 st.sidebar.subheader("Uploaded Files")
 for p in st.session_state["uploaded_paths"]:
@@ -124,8 +151,14 @@ if st.button("Build KB"):
                 st.error("❌ Build KB timeout - this may take longer for large files")
             except requests.exceptions.ConnectionError:
                 st.error(f"❌ Cannot connect to backend at {BACKEND_URL}")
+                st.info("💡 Backend may be sleeping. Wait 30 seconds and try again.")
             except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
+                error_str = str(e)
+                if "502" in error_str or "Bad Gateway" in error_str:
+                    st.error("❌ Backend is down (502 error)")
+                    st.info("💡 Backend service may be sleeping or crashed. Check Render dashboard.")
+                else:
+                    st.error(f"❌ Error: {error_str}")
 
 
 st.header("2️⃣ Generate Test Cases")
