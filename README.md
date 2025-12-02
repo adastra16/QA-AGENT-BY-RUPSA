@@ -1,6 +1,9 @@
 
 # QA-Agent — Automated Testcase & Selenium Script Generator
 
+
+Demo Video: https://drive.google.com/file/d/1Qys6bH2C3qYUlLxHS5qXCpp3Iba1_-9-/view?usp=sharingv
+
 **Created by:** Rupsa Nanda
 
 QA-Agent is an intelligent automated QA workflow tool that reads project documents and generates structured testcases. It also converts selected testcases into Selenium scripts for browser-based automation. The system builds a searchable knowledge base using ChromaDB and sentence-transformer-based embeddings.
